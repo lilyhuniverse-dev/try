@@ -3,7 +3,6 @@ const $ = (id) => document.getElementById(id);
 const chart = $('chart');
 const W = 1000, H = 610, M = { left:86, right:38, top:32, bottom:75 };
 let sheets = {}, original = [], current = [], xKey = '', yKey = '', dragging = null;
-let corrOriginal = [], corrEdited = [], corrX = '', corrY = '';
 
 // 英文界面中，Excel 的案例名和变量名也会显示为对应英文；数据本身保持不变。
 const englishSheetNames = {
@@ -34,7 +33,7 @@ const translations = {
     brand: 'AP Stats Hub',
     sidebar_title: '学习工具',
     nav_linreg: '线性回归教学',
-    nav_scatter: '相关关系探究', nav_correlation: '散点图', heading_title: '相关关系探究',
+    heading_title: '相关关系探究',
     heading_desc: '拖动数据点，观察最佳拟合线、相关系数与 R² 的变化。',
     label_sheet: '选择案例',
     label_x: 'X 变量',
@@ -57,13 +56,12 @@ const translations = {
     best_fit_line: '最佳拟合直线',
     slope: '斜率',
     intercept: '截距',
-    corr_title: '散点图', corr_desc: '选择一个数据点，再用拉杆分别调整它的 X 和 Y 值，比较修改前后的散点图。', corr_reset: '重置变动', corr_slider_heading: '选择并调整一个数据点', corr_point: '数据点', corr_x_value: 'X 值', corr_y_value: 'Y 值', corr_hint: '拖动 X 或 Y 拉杆后，右侧图中的对应点会立即移动。', corr_original: '原始数据', corr_changed: '变动后的数据', mean: '均值', variance: '方差',
   },
   en: {
     brand: 'AP Stats Hub',
     sidebar_title: 'Learning tools',
     nav_linreg: 'Linear Regression',
-    nav_scatter: 'Correlation Explorer', nav_correlation: 'Scatterplot', heading_title: 'Correlation Explorer',
+    heading_title: 'Correlation Explorer',
     heading_desc: 'Drag the data points and watch the best-fit line, correlation, and R² update live.',
     label_sheet: 'Select dataset',
     label_x: 'X variable',
@@ -86,7 +84,6 @@ const translations = {
     best_fit_line: 'Best-Fit Line',
     slope: 'Slope',
     intercept: 'Intercept',
-    corr_title: 'Scatterplot', corr_desc: 'Choose a data point, then use the sliders to adjust its X and Y values and compare the two scatterplots.', corr_reset: 'Reset changes', corr_slider_heading: 'Choose and adjust a data point', corr_point: 'Data point', corr_x_value: 'X value', corr_y_value: 'Y value', corr_hint: 'Move either slider to see the matching point update immediately in the chart on the right.', corr_original: 'Original data', corr_changed: 'Adjusted data', mean: 'Mean', variance: 'Variance',
   },
 };
 let lang = localStorage.getItem('apstats-lang') || 'zh';
@@ -95,11 +92,11 @@ function applyLang() {
   const t = translations[lang];
   document.querySelectorAll('[data-i18n]').forEach(el => { if (t[el.dataset.i18n] !== undefined) el.textContent = t[el.dataset.i18n]; });
   document.querySelectorAll('[data-i18n-aria]').forEach(el => { if (t[el.dataset.i18nAria] !== undefined) el.setAttribute('aria-label', t[el.dataset.i18nAria]); });
-  document.title = lang === 'zh' ? 'AP Stats Hub · 相关关系探究' : 'AP Stats Hub · Correlation Explorer';
+  document.title = `AP Stats Hub · ${t.heading_title}`;
   $('langToggle').textContent = t.lang_button;
   refreshSelectLabels();
   render();
-  updateCorrelationLanguage(); renderCorrelation();
+  document.dispatchEvent(new Event('apstats:language'));
 }
 function setLang(l) { lang = l; localStorage.setItem('apstats-lang', l); applyLang(); }
 $('langToggle').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));
@@ -189,15 +186,6 @@ $('sheetSelect').addEventListener('change', e=>loadSheet(e.target.value)); $('xS
 applyLang();
 fetch('linear-regression-data.xlsx').then(r=>r.arrayBuffer()).then(buffer=>{
   const book=XLSX.read(buffer,{type:'array'}); book.SheetNames.forEach(name=>{sheets[name]=XLSX.utils.sheet_to_json(book.Sheets[name],{defval:null});});
-  setOptions($('sheetSelect'),book.SheetNames,book.SheetNames[0],displaySheetName); $('sheetSelect').disabled=false; $('xSelect').disabled=false; $('ySelect').disabled=false; loadSheet(book.SheetNames[0]); initCorrelation();
-}).catch(()=>{ $('sheetSelect').innerHTML=`<option>${translations[lang].load_error_option}</option>`; $('hint').className='hint danger'; $('hint').textContent=translations[lang].load_error_hint; });
-
-function initCorrelation(){setOptions($('corrSheetSelect'),Object.keys(sheets),Object.keys(sheets)[0],displaySheetName);['corrSheetSelect','corrXSelect','corrYSelect'].forEach(id=>$(id).disabled=false);loadCorrelationSheet($('corrSheetSelect').value)}
-function loadCorrelationSheet(name){const c=numericColumns(sheets[name]||[]);setOptions($('corrXSelect'),c,c[0],displayVariableName);setOptions($('corrYSelect'),c,c[1]||c[0],displayVariableName);corrX=$('corrXSelect').value;corrY=$('corrYSelect').value;resetCorrelation()}
-function resetCorrelation(){const rows=sheets[$('corrSheetSelect').value]||[];corrOriginal=rows.map(r=>({x:Number(r[corrX]),y:Number(r[corrY])})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));corrEdited=corrOriginal.map(p=>({...p}));$('pointSlider').max=Math.max(0,corrEdited.length-1);$('pointSlider').value=0;syncCorrelationSliders();renderCorrelation()}
-function syncCorrelationSliders(){const p=corrEdited[Number($('pointSlider').value)];if(!p)return;const xd=domain(corrOriginal.map(q=>q.x)),yd=domain(corrOriginal.map(q=>q.y));[['corrXSlider','corrXValue',p.x,xd],['corrYSlider','corrYValue',p.y,yd]].forEach(([id,out,v,d])=>{const s=$(id);s.min=d[0];s.max=d[1];s.step=(d[1]-d[0])/200;s.value=v;$(out).textContent=fmt(v)});$('pointValue').textContent=Number($('pointSlider').value)+1}
-function correlationStats(p){if(!p.length)return{mx:0,my:0,vx:0,vy:0};const n=p.length,mx=p.reduce((s,q)=>s+q.x,0)/n,my=p.reduce((s,q)=>s+q.y,0)/n;return{mx,my,vx:p.reduce((s,q)=>s+(q.x-mx)**2,0)/n,vy:p.reduce((s,q)=>s+(q.y-my)**2,0)/n}}
-function renderSmallChart(svg,p,xd,yd,changed){if(!svg||!p.length)return;const w=520,h=390,m={l:55,r:18,t:16,b:54},sx=v=>scale(v,xd,m.l,w-m.r),sy=v=>scale(v,yd,h-m.b,m.t);let html='';ticks(xd[0],xd[1],5).forEach(v=>{let x=sx(v);html+=`<line class="grid" x1="${x}" y1="${m.t}" x2="${x}" y2="${h-m.b}"/><text class="tick" x="${x}" y="${h-m.b+19}" text-anchor="middle">${fmt(v)}</text>`});ticks(yd[0],yd[1],5).forEach(v=>{let y=sy(v);html+=`<line class="grid" x1="${m.l}" y1="${y}" x2="${w-m.r}" y2="${y}"/><text class="tick" x="${m.l-8}" y="${y+4}" text-anchor="end">${fmt(v)}</text>`});html+=`<line class="axis" x1="${m.l}" y1="${h-m.b}" x2="${w-m.r}" y2="${h-m.b}"/><line class="axis" x1="${m.l}" y1="${m.t}" x2="${m.l}" y2="${h-m.b}"/>`;p.forEach((q,i)=>html+=`<circle class="point${changed&&i===Number($('pointSlider').value)?' selected':''}" cx="${sx(q.x)}" cy="${sy(q.y)}" r="5"/>`);html+=`<text class="axis-label small-axis" x="${w/2}" y="${h-10}" text-anchor="middle">${escapeHtml(displayVariableName(corrX))}</text><text class="axis-label small-axis" transform="translate(15 ${h/2}) rotate(-90)" text-anchor="middle">${escapeHtml(displayVariableName(corrY))}</text>`;svg.innerHTML=html}
-function updateCorrelationLanguage(){if(!$('corrTitle'))return;const t=translations[lang];[['corrTitle','corr_title'],['corrDescription','corr_desc'],['corrSheetLabel','label_sheet'],['corrXLabel','label_x'],['corrYLabel','label_y'],['corrResetButton','corr_reset'],['sliderHeading','corr_slider_heading'],['pointLabel','corr_point'],['corrXValueLabel','corr_x_value'],['corrYValueLabel','corr_y_value'],['corrHint','corr_hint'],['originalHeading','corr_original'],['changedHeading','corr_changed']].forEach(([id,k])=>$(id).textContent=t[k]);if(Object.keys(sheets).length){setOptions($('corrSheetSelect'),Object.keys(sheets),$('corrSheetSelect').value,displaySheetName);const c=numericColumns(sheets[$('corrSheetSelect').value]||[]);setOptions($('corrXSelect'),c,corrX,displayVariableName);setOptions($('corrYSelect'),c,corrY,displayVariableName)}}
-function renderCorrelation(){if(!corrOriginal.length||!$('originalChart'))return;const t=translations[lang],all=[...corrOriginal,...corrEdited],xd=domain(all.map(p=>p.x)),yd=domain(all.map(p=>p.y)),a=correlationStats(corrOriginal),b=correlationStats(corrEdited),stat=s=>`${t.mean} X: ${fmt(s.mx)}　${t.variance} X: ${fmt(s.vx)}<br>${t.mean} Y: ${fmt(s.my)}　${t.variance} Y: ${fmt(s.vy)}`;$('originalStats').innerHTML=stat(a);$('changedStats').innerHTML=stat(b);renderSmallChart($('originalChart'),corrOriginal,xd,yd,false);renderSmallChart($('changedChart'),corrEdited,xd,yd,true)}
-$('scatterNav').addEventListener('click',()=>{$('scatterTool').classList.remove('tool-hidden');$('correlationTool').classList.add('tool-hidden');$('scatterNav').classList.add('active');$('correlationNav').classList.remove('active')});$('correlationNav').addEventListener('click',()=>{$('scatterTool').classList.add('tool-hidden');$('correlationTool').classList.remove('tool-hidden');$('scatterNav').classList.remove('active');$('correlationNav').classList.add('active');renderCorrelation()});$('corrSheetSelect').addEventListener('change',e=>loadCorrelationSheet(e.target.value));$('corrXSelect').addEventListener('change',()=>{corrX=$('corrXSelect').value;resetCorrelation()});$('corrYSelect').addEventListener('change',()=>{corrY=$('corrYSelect').value;resetCorrelation()});$('pointSlider').addEventListener('input',()=>{syncCorrelationSliders();renderCorrelation()});$('corrXSlider').addEventListener('input',e=>{const p=corrEdited[Number($('pointSlider').value)];if(p){p.x=Number(e.target.value);$('corrXValue').textContent=fmt(p.x);renderCorrelation()}});$('corrYSlider').addEventListener('input',e=>{const p=corrEdited[Number($('pointSlider').value)];if(p){p.y=Number(e.target.value);$('corrYValue').textContent=fmt(p.y);renderCorrelation()}});$('corrResetButton').addEventListener('click',resetCorrelation);
+  setOptions($('sheetSelect'),book.SheetNames,book.SheetNames[0],displaySheetName); $('sheetSelect').disabled=false; $('xSelect').disabled=false; $('ySelect').disabled=false; loadSheet(book.SheetNames[0]);
+  document.dispatchEvent(new Event('apstats:data'));
+}).catch(()=>{ $('sheetSelect').innerHTML=`<option>${translations[lang].load_error_option}</option>`; $('hint').className='hint danger'; $('hint').textContent=translations[lang].load_error_hint; document.dispatchEvent(new Event('apstats:error')); });

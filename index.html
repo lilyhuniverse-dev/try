@@ -13,13 +13,16 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-title" data-i18n="sidebar_title">学习工具</div>
-      <div class="nav-section" data-i18n="nav_linreg">线性回归教学</div>
-      <button class="nav-item active" id="scatterNav" type="button" data-i18n="nav_scatter">相关关系探究</button>
-      <button class="nav-item" id="correlationNav" type="button" data-i18n="nav_correlation">散点图</button>
+      <div class="nav-group" data-i18n="nav_linreg">线性回归教学</div>
+      <nav aria-label="线性回归教学" data-i18n-aria="nav_linreg">
+        <button id="correlationNav" class="nav-item tool-nav active" type="button" data-tool="correlation" data-i18n="heading_title" aria-current="page" aria-controls="correlationPage">相关关系探究</button>
+        <button id="scatterNav" class="nav-item tool-nav" type="button" data-tool="scatter" data-i18n="scatter_title" aria-controls="scatterPage">散点图</button>
+      </nav>
     </aside>
-    <main class="content" id="scatterTool">
+    <main class="content">
+      <div id="correlationPage">
       <div class="page-heading">
-        <div><h1 data-i18n="heading_title">线性回归教学</h1><p data-i18n="heading_desc">拖动数据点，观察最佳拟合线、相关系数与 R² 的变化。</p></div>
+        <div><h1 data-i18n="heading_title">相关关系探究</h1><p data-i18n="heading_desc">拖动数据点，观察最佳拟合线、相关系数与 R² 的变化。</p></div>
       </div>
       <section class="controls" data-i18n-aria="controls_aria" aria-label="控制面板">
         <label><span data-i18n="label_sheet">选择案例</span>
@@ -42,15 +45,34 @@
         <div id="count" class="count">数据点：0</div>
       </section>
       <section class="chart-card"><svg id="chart" viewBox="0 0 1000 610" role="img" data-i18n-aria="chart_aria" aria-label="互动散点图"></svg></section>
-    </main>
-    <main class="content tool-hidden" id="correlationTool">
-      <div class="page-heading"><div><h1 id="corrTitle">散点图</h1><p id="corrDescription">选择一个数据点，再用拉杆分别调整它的 X 和 Y 值，比较修改前后的散点图。</p></div></div>
-      <section class="controls"><label><span id="corrSheetLabel">选择案例</span><select id="corrSheetSelect" disabled></select></label><label><span id="corrXLabel">X 变量</span><select id="corrXSelect" disabled></select></label><label><span id="corrYLabel">Y 变量</span><select id="corrYSelect" disabled></select></label><button id="corrResetButton" class="reset" type="button">重置变动</button></section>
-      <section class="slider-panel"><div class="slider-heading" id="sliderHeading">选择并调整一个数据点</div><label class="range-row"><span id="pointLabel">数据点</span><input id="pointSlider" type="range" min="0" value="0"><output id="pointValue">1</output></label><label class="range-row"><span id="corrXValueLabel">X 值</span><input id="corrXSlider" type="range"><output id="corrXValue">—</output></label><label class="range-row"><span id="corrYValueLabel">Y 值</span><input id="corrYSlider" type="range"><output id="corrYValue">—</output></label><p class="hint" id="corrHint">拖动 X 或 Y 拉杆后，右侧图中的对应点会立即移动。</p></section>
-      <section class="comparison-grid"><article class="comparison-card"><h2 id="originalHeading">原始数据</h2><div id="originalStats" class="mini-stats"></div><svg id="originalChart" viewBox="0 0 520 390"></svg></article><article class="comparison-card changed"><h2 id="changedHeading">变动后的数据</h2><div id="changedStats" class="mini-stats"></div><svg id="changedChart" viewBox="0 0 520 390"></svg></article></section>
+      </div>
+      <div id="scatterPage" hidden>
+        <div class="page-heading"><div><h1 data-i18n="scatter_title">散点图</h1><p data-i18n="scatter_desc"></p></div></div>
+        <section class="controls" data-i18n-aria="controls_aria" aria-label="控制面板">
+          <label><span data-i18n="label_sheet">选择案例</span><select id="scatterSheet" disabled><option data-i18n="loading">正在读取数据…</option></select></label>
+          <label><span data-i18n="label_x">X 变量</span><select id="scatterX" disabled></select></label>
+          <label><span data-i18n="label_y">Y 变量</span><select id="scatterY" disabled></select></label>
+          <button id="scatterReset" class="reset" type="button" data-i18n="scatter_reset" disabled>重置调整</button>
+        </section>
+        <p id="scatterHint" class="hint" role="status"></p>
+        <section id="scatterSliders" class="scatter-sliders"></section>
+        <div class="scatter-comparison">
+          <section class="comparison-card" aria-labelledby="scatterOriginalTitle">
+            <h2 id="scatterOriginalTitle" data-i18n="scatter_original">原始数据</h2>
+            <p id="scatterOriginalStats" class="comparison-stats"></p>
+            <svg id="scatterOriginal" class="comparison-chart" viewBox="0 0 620 470" role="img" aria-label="原始数据散点图" data-i18n-aria="scatter_original_aria"></svg>
+          </section>
+          <section class="comparison-card" aria-labelledby="scatterAdjustedTitle">
+            <h2 id="scatterAdjustedTitle" data-i18n="scatter_adjusted">调整后</h2>
+            <p id="scatterAdjustedStats" class="comparison-stats" aria-live="polite"></p>
+            <svg id="scatterAdjusted" class="comparison-chart" viewBox="0 0 620 470" role="img" aria-label="调整后散点图" data-i18n-aria="scatter_adjusted_aria"></svg>
+          </section>
+        </div>
+      </div>
     </main>
   </div>
   <footer><span>© 2026</span><span>liuqin@shsid.org</span></footer>
   <script src="app.js"></script>
+  <script src="scatterplot.js"></script>
 </body>
 </html>
