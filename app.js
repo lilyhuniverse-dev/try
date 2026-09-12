@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 const chart = $('chart');
 const W = 1000, H = 610, M = { left:86, right:38, top:32, bottom:75 };
 let sheets = {}, original = [], current = [], xKey = '', yKey = '', dragging = null;
+let corrOriginal = [], corrEdited = [], corrX = '', corrY = '';
 
 // 英文界面中，Excel 的案例名和变量名也会显示为对应英文；数据本身保持不变。
 const englishSheetNames = {
@@ -191,7 +192,6 @@ fetch('linear-regression-data.xlsx').then(r=>r.arrayBuffer()).then(buffer=>{
   setOptions($('sheetSelect'),book.SheetNames,book.SheetNames[0],displaySheetName); $('sheetSelect').disabled=false; $('xSelect').disabled=false; $('ySelect').disabled=false; loadSheet(book.SheetNames[0]); initCorrelation();
 }).catch(()=>{ $('sheetSelect').innerHTML=`<option>${translations[lang].load_error_option}</option>`; $('hint').className='hint danger'; $('hint').textContent=translations[lang].load_error_hint; });
 
-let corrOriginal = [], corrEdited = [], corrX = '', corrY = '';
 function initCorrelation(){setOptions($('corrSheetSelect'),Object.keys(sheets),Object.keys(sheets)[0],displaySheetName);['corrSheetSelect','corrXSelect','corrYSelect'].forEach(id=>$(id).disabled=false);loadCorrelationSheet($('corrSheetSelect').value)}
 function loadCorrelationSheet(name){const c=numericColumns(sheets[name]||[]);setOptions($('corrXSelect'),c,c[0],displayVariableName);setOptions($('corrYSelect'),c,c[1]||c[0],displayVariableName);corrX=$('corrXSelect').value;corrY=$('corrYSelect').value;resetCorrelation()}
 function resetCorrelation(){const rows=sheets[$('corrSheetSelect').value]||[];corrOriginal=rows.map(r=>({x:Number(r[corrX]),y:Number(r[corrY])})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));corrEdited=corrOriginal.map(p=>({...p}));$('pointSlider').max=Math.max(0,corrEdited.length-1);$('pointSlider').value=0;syncCorrelationSliders();renderCorrelation()}
