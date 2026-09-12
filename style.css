@@ -40,7 +40,7 @@ button:disabled, input:disabled { opacity:.5; cursor:not-allowed; }
 .comparison-chart .point { cursor:default; }
 .comparison-chart .adjusted-point { fill:#c17b23; }
 .comparison-chart .quadrant-same { fill:#f28c18; }
-.comparison-chart .quadrant-opposite { fill:#e74791; }
+.comparison-chart .quadrant-opposite { fill:#22a06b; }
 .comparison-chart .quadrant-axis { fill:#2276dc; }
 .standardized-axes line { stroke:#50606d; stroke-width:1.8; }
 .zero-axis-label { fill:#263844; font-size:12px; paint-order:stroke; stroke:white; stroke-width:3px; }
