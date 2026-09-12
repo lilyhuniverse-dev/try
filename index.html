@@ -17,6 +17,7 @@
       <nav aria-label="线性回归教学" data-i18n-aria="nav_linreg">
         <button id="correlationNav" class="nav-item tool-nav active" type="button" data-tool="correlation" data-i18n="heading_title" aria-current="page" aria-controls="correlationPage">相关关系探究</button>
         <button id="scatterNav" class="nav-item tool-nav" type="button" data-tool="scatter" data-i18n="scatter_title" aria-controls="scatterPage">散点图</button>
+        <button id="outlierNav" class="nav-item tool-nav" type="button" data-tool="outlier" data-i18n="outlier_title" aria-controls="outlierPage">异常值点</button>
       </nav>
     </aside>
     <main class="content">
@@ -69,10 +70,31 @@
           </section>
         </div>
       </div>
+      <div id="outlierPage" hidden>
+        <div class="page-heading"><div><h1 data-i18n="outlier_title">异常值点</h1><p data-i18n="outlier_desc"></p></div></div>
+        <section class="controls" data-i18n-aria="controls_aria">
+          <button id="outlierUndo" type="button" class="secondary-button" data-i18n="outlier_undo" disabled>撤销上一步</button>
+          <button id="outlierClear" type="button" class="reset" data-i18n="outlier_clear" disabled>清空数据点</button>
+
+        </section>
+        <p class="hint" data-i18n="outlier_hint"></p>
+        <section class="outlier-stats" aria-live="polite" data-i18n-aria="outlier_stats_aria">
+          <div><span data-i18n="outlier_mean_x"></span><strong id="outlierMeanX">—</strong></div>
+          <div><span data-i18n="outlier_mean_y"></span><strong id="outlierMeanY">—</strong></div>
+          <div><span data-i18n="outlier_sd_x"></span><strong id="outlierSdX">—</strong></div>
+          <div><span data-i18n="outlier_sd_y"></span><strong id="outlierSdY">—</strong></div>
+          <div><span data-i18n="outlier_r"></span><strong id="outlierR">—</strong></div>
+          <div><span>R²</span><strong id="outlierR2">—</strong></div>
+        </section>
+        <p id="outlierStatus" class="hint" role="status"></p>
+        <section class="chart-card outlier-card"><svg id="outlierChart" viewBox="0 0 1000 610" role="group" data-i18n-aria="outlier_chart_aria"></svg></section>
+      </div>
     </main>
   </div>
   <footer><span>© 2026</span><span>liuqin@shsid.org</span></footer>
   <script src="app.js"></script>
   <script src="scatterplot.js"></script>
+  <script src="outliers.js"></script>
 </body>
 </html>
+

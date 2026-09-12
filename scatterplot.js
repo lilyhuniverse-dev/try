@@ -12,6 +12,7 @@
     subtract_x:'减去 x̄', subtract_y:'减去 ȳ', reciprocal_x:'乘以 1/sₓ', reciprocal_y:'乘以 1/sᵧ',
     no_sd:'点数不足或标准差为 0，无法标准化。',
     standardized_x:'标准化 X（无单位）', standardized_y:'标准化 Y（无单位）',
+
     undefined_r:'未定义（点数不足或变量为常数）',
   });
   Object.assign(translations.en, {
@@ -26,6 +27,7 @@
     subtract_x:'Subtract x̄', subtract_y:'Subtract ȳ', reciprocal_x:'Multiply by 1/sₓ', reciprocal_y:'Multiply by 1/sᵧ',
     no_sd:'Standardization requires at least two points and a nonzero standard deviation.',
     standardized_x:'Standardized X (unitless)', standardized_y:'Standardized Y (unitless)',
+
     undefined_r:'undefined (too few points or a constant variable)',
   });
   let activeTool='correlation', points=[], baseX=[-1,1], baseY=[-1,1];
@@ -80,12 +82,14 @@
     dragging=null;
     $('correlationPage').hidden=tool!=='correlation';
     $('scatterPage').hidden=tool!=='scatter';
+    $('outlierPage').hidden=tool!=='outlier';
     document.querySelectorAll('[data-tool]').forEach(button=>{
       const active=button.dataset.tool===tool;
       button.classList.toggle('active',active);
       if (active) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current');
     });
-    document.title=`AP Stats Hub · ${translations[lang][tool==='scatter'?'scatter_title':'heading_title']}`;
+    document.title=`AP Stats Hub · ${translations[lang][{scatter:'scatter_title',outlier:'outlier_title',correlation:'heading_title'}[tool]]}`;
+    document.dispatchEvent(new CustomEvent('apstats:tool',{detail:tool}));
   }
   document.querySelectorAll('[data-tool]').forEach(button=>button.addEventListener('click',()=>showTool(button.dataset.tool)));
 
@@ -126,15 +130,29 @@
   function transformed() {
     return points.map(p=>({x:(p.x+values.shiftX)*values.scaleX,y:(p.y+values.shiftY)*values.scaleY}));
   }
+  function isStandardized(axis) {
+    const s=originalStats[axis.toLowerCase()];
+    return s.sd>0 && values[`shift${axis}`]===-s.mean && values[`scale${axis}`]===1/s.sd;
+  }
+  // Treat floating-point residue around zero as lying on an axis.
+  function quadrantClass(p) {
+    if(Math.abs(p.x)<=1e-12 || Math.abs(p.y)<=1e-12)return 'quadrant-axis';
+    return (p.x>0)===(p.y>0)?'quadrant-same':'quadrant-opposite';
+  }
   function drawPlot(id,data,dx,dy,isAdjusted) {
     const svg=$(id), t=translations[lang];
     if (!data.length) { svg.innerHTML=`<text x="310" y="220" text-anchor="middle" class="axis-label">${escapeHtml(dataError?t.load_error_option:!dataReady?t.loading:t.scatter_empty)}</text>`; return; }
     const w=620,h=470,m={left:80,right:24,top:22,bottom:80};
     const sx=v=>scale(v,dx,m.left,w-m.right), sy=v=>scale(v,dy,h-m.bottom,m.top);
+    const standardized=isAdjusted && isStandardized('X') && isStandardized('Y');
     let html=`<defs><clipPath id="${id}Clip"><rect x="${m.left}" y="${m.top}" width="${w-m.right-m.left}" height="${h-m.bottom-m.top}"/></clipPath></defs>`;
     ticks(...dx,5).forEach(v=>{const x=sx(v); html+=`<line class="grid" x1="${x}" y1="${m.top}" x2="${x}" y2="${h-m.bottom}"/><text class="tick" x="${x}" y="${h-m.bottom+23}" text-anchor="middle">${fmt(v)}</text>`;});
     ticks(...dy,5).forEach(v=>{const y=sy(v); html+=`<line class="grid" x1="${m.left}" y1="${y}" x2="${w-m.right}" y2="${y}"/><text class="tick" x="${m.left-10}" y="${y+4}" text-anchor="end">${fmt(v)}</text>`;});
     html+=`<path class="axis" fill="none" d="M ${m.left} ${m.top} V ${h-m.bottom} H ${w-m.right}"/>`;
+    if(standardized) {
+      html+=`<g class="standardized-axes"><line x1="${sx(0)}" x2="${sx(0)}" y1="${m.top}" y2="${h-m.bottom}"/><line x1="${m.left}" x2="${w-m.right}" y1="${sy(0)}" y2="${sy(0)}"/></g>`;
+      html+=`<text class="zero-axis-label" x="${sx(0)+7}" y="${m.top+14}">X = 0</text><text class="zero-axis-label" x="${w-m.right-5}" y="${sy(0)-7}" text-anchor="end">Y = 0</text>`;
+    }
     const axisLabel=axis=>{
       const s=originalStats[axis.toLowerCase()];
       if(isAdjusted && s.sd>0 && values[`shift${axis}`]===-s.mean && values[`scale${axis}`]===1/s.sd) return t[`standardized_${axis.toLowerCase()}`];
@@ -143,7 +161,7 @@
     const xLabel=escapeHtml(axisLabel('X')),yLabel=escapeHtml(axisLabel('Y'));
     html+=`<text class="axis-label" x="${(m.left+w-m.right)/2}" y="${h-20}" text-anchor="middle">${xLabel}</text><text class="axis-label" transform="translate(18 ${(m.top+h-m.bottom)/2}) rotate(-90)" text-anchor="middle">${yLabel}</text>`;
     html+=`<g clip-path="url(#${id}Clip)">`;
-    data.forEach(p=>{html+=`<circle class="point${isAdjusted?' adjusted-point':''}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="4.5"><title>X: ${p.x}, Y: ${p.y}</title></circle>`;});
+    data.forEach(p=>{html+=`<circle class="point${isAdjusted?' adjusted-point':''}${standardized?' '+quadrantClass(p):''}" cx="${sx(p.x)}" cy="${sy(p.y)}" r="4.5"><title>X: ${p.x}, Y: ${p.y}</title></circle>`;});
     svg.innerHTML=html+'</g>';
   }
   function draw() {
@@ -214,3 +232,4 @@
   if (Object.keys(sheets).length) initData();
   applyLang();
 })();
+

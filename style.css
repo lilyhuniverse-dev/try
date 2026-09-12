@@ -39,6 +39,23 @@ button:disabled, input:disabled { opacity:.5; cursor:not-allowed; }
 .comparison-chart { display:block; width:100%; height:auto; }
 .comparison-chart .point { cursor:default; }
 .comparison-chart .adjusted-point { fill:#c17b23; }
+.comparison-chart .quadrant-same { fill:#f28c18; }
+.comparison-chart .quadrant-opposite { fill:#e74791; }
+.comparison-chart .quadrant-axis { fill:#2276dc; }
+.standardized-axes line { stroke:#50606d; stroke-width:1.8; }
+.zero-axis-label { fill:#263844; font-size:12px; paint-order:stroke; stroke:white; stroke-width:3px; }
 .comparison-chart .axis-label { font-size:13px; }
 .comparison-chart .tick { font-size:12px; }
 .secondary-button { border:1px solid #c9d2da; border-radius:5px; padding:7px 12px; background:white; color:var(--navy); cursor:pointer; font:inherit; font-size:12px; }
+.outlier-range { align-self:center; color:#64717d; font-size:13px; }
+.outlier-stats { position:sticky; top:0; z-index:2; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); border:1px solid var(--line); border-radius:8px; background:#f7fafc; }
+.outlier-stats>div { min-width:0; padding:16px 12px; border-right:1px solid var(--line); }
+.outlier-stats>div:last-child { border:0; }
+.outlier-stats span { display:block; min-height:36px; color:#64717d; font-size:13px; }
+.outlier-stats strong { display:block; color:var(--navy); font-size:21px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.outlier-card { margin-top:10px; height:clamp(400px,calc(100vh - 150px),620px); }
+#outlierChart { display:block; width:100%; height:100%; touch-action:none; user-select:none; cursor:crosshair; }
+.outlier-point:hover,.outlier-point:focus { fill:#c17b23; stroke:var(--navy); stroke-width:2; outline:none; }
+.outlier-point:active { cursor:grabbing; }
+.outlier-empty { fill:#64717d; font-size:17px; pointer-events:none; }
+
